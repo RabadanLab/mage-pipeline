@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
+	yaml "gopkg.in/yaml.v2"
 	"html/template"
 	"io/ioutil"
+	"log"
 	"os"
-
-	yaml "gopkg.in/yaml.v2"
+	"path/filepath"
 )
 
 func check(e error) {
@@ -26,16 +26,18 @@ func main() {
 	}
 
 	// Read yaml
-	configData, err := ioutil.ReadFile("config.yaml")
+	config_name := "config.yaml"
+	configData, err := ioutil.ReadFile(config_name)
 	check(err)
 
 	t := Config{}
 	err = yaml.Unmarshal(configData, &t)
 	check(err)
 
-	fmt.Printf("--- t:\n%v\n\n", t)
-
-	makeTmpl, err := ioutil.ReadFile("Makefile.tmpl")
+	if os.Getenv("MAGEROOT") == "" {
+		log.Fatalf("Please set MAGEROOT environmental variable")
+	}
+	makeTmpl, err := ioutil.ReadFile(filepath.Join(os.Getenv("MAGEROOT"), "src", "Makefile.tmpl"))
 	check(err)
 
 	tmpl, err := template.New("test").Parse(string(makeTmpl))
