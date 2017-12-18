@@ -99,4 +99,8 @@ tar xzvf kallisto_linux-v0.43.1.tar.gz
 go get github.com/urfave/cli
 ```
 
+# Implementation notes
+
+mage-quant creates `quant.ok` in the kallisto output directory to indicate everything run well
+
 

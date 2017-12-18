@@ -7,16 +7,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"sync"
 )
 
-func worker(id string, cmd string, jobs <-chan int, results chan<- int) {
-	for j := range jobs {
-		fmt.Println("worker", id, "started  job", j)
-		exec_cmd(cmd)
-		fmt.Println("worker", id, "finished job", j)
-		results <- j * 2
-	}
-}
 func exec_cmd(cmd string) {
 
 	cmdObj := exec.Command("bash", "-c", cmd)
@@ -65,6 +59,7 @@ func main() {
 	fastqDirPtr := flag.String("fastqdir", "fastqs", "Fastq Directory")
 	outputDirPtr := flag.String("outputdir", "quant", "Output Directory")
 	dryrunPtr := flag.Bool("dryrun", false, "Dry run")
+	donePtr := flag.String("done", "quant.ok", "If this file exists, then this program will not run")
 
 	flag.Parse()
 	// fmt.Println("flags:" , flag.Args())
@@ -77,6 +72,13 @@ func main() {
 	*kalBinPtr, _ = expand(*kalBinPtr)
 	*kalIndexPtr, _ = expand(*kalIndexPtr)
 	*metaPtr, _ = expand(*metaPtr)
+	*donePtr, _ = expand(*donePtr)
+
+	// Check done
+	if _, err := os.Stat(*donePtr); err == nil {
+		fmt.Printf("%q exists! Not running to save time/resources.\n", *donePtr)
+		os.Exit(0)
+	}
 
 	// Checks if file exists
 	checkFile(*kalBinPtr)
@@ -123,17 +125,40 @@ func main() {
 		jobs := make(chan int, 100)
 		results := make(chan int, 100)
 
+		var wg sync.WaitGroup
+
 		for i, s := range samples {
 			checkFile(s.r1)
 			checkFile(s.r2)
 			checkDirCreate(s.outputDirForSample)
-			go worker(s.id, s.cmd, jobs, results)
+
+			wg.Add(1)
+
+			go func(id string, cmd string, jobs <-chan int, results chan<- int) {
+				for j := range jobs {
+					fmt.Println("worker", id, "started  job", j)
+					exec_cmd(cmd)
+					defer wg.Done()
+
+					fmt.Println("worker", id, "finished job", j)
+					results <- j * 2
+				}
+			}(s.id, s.cmd, jobs, results)
 
 			jobs <- i
 		}
 		close(jobs)
+
 		for a := 1; a <= len(samples); a++ {
 			<-results
+		}
+
+		wg.Wait()
+
+		_, err := os.Create(filepath.Join(*outputDirPtr, "quant.ok"))
+
+		if err != nil {
+			log.Fatal(err)
 		}
 
 	}

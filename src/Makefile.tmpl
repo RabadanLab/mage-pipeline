@@ -14,10 +14,12 @@ help: ## Prints help for targets with comments
 	@grep -E '^[.0-9a-zA-Z_-/]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 
-quant: $(MAGE_REFDIR)/t2g_mapping.tsv ## Quantification process
-	$(MAGEROOT)/bin/mage-quant -kal=$(KALLISTO) -fastqdir=$(MAGE_PROJDIR)/fastqs -index=$(KALLISTO_INDEX) -meta=$(META) -outputdir=$(QUANT_OUTPUTDIR)/raw
+quant: $(QUANT_OUTPUTDIR)/exprs_gene_clean_long.tsv ## Quantification
 
-$(QUANT_OUTPUTDIR)/exprs_transcript.tsv: 
+$(QUANT_OUTPUTDIR)/raw/quant.ok: 
+	$(MAGEROOT)/bin/mage-quant -kal=$(KALLISTO) -fastqdir=$(MAGE_PROJDIR)/fastqs -index=$(KALLISTO_INDEX) -meta=$(META) -outputdir=$(QUANT_OUTPUTDIR)/raw -done=$(QUANT_OUTPUTDIR)/raw/quant.ok
+
+$(QUANT_OUTPUTDIR)/exprs_transcript.tsv: $(QUANT_OUTPUTDIR)/raw/quant.ok
 	Rscript $(MAGEROOT)/src/utils/merge_abundances.R $(QUANT_OUTPUTDIR)/raw > $(QUANT_OUTPUTDIR)/exprs_transcript.tsv
 
 $(MAGE_REFDIR)/t2g_mapping.tsv: $(GTF) ## Transcript to Gene Mapping file
