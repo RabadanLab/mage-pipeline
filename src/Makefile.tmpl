@@ -21,7 +21,7 @@ $(QUANT_OUTPUTDIR)/exprs_transcript.tsv:
 	Rscript $(MAGEROOT)/src/utils/merge_abundances.R $(QUANT_OUTPUTDIR)/raw > $(QUANT_OUTPUTDIR)/exprs_transcript.tsv
 
 $(MAGE_REFDIR)/t2g_mapping.tsv: $(GTF) ## Transcript to Gene Mapping file
-        Rscript $(MAGEROOT)/src/utils/gtf_to_mapping.R $(GTF) > $(MAGE_REFDIR)/t2g_mapping.tsv
+	Rscript $(MAGEROOT)/src/utils/gtf_to_mapping.R $(GTF) > $(MAGE_REFDIR)/t2g_mapping.tsv
 
 $(QUANT_OUTPUTDIR)/exprs_gene.tsv: $(QUANT_OUTPUTDIR)/exprs_transcript.tsv  $(MAGE_REFDIR)/t2g_mapping.tsv
 	Rscript $(MAGEROOT)/src/quant/convert_t2g.R $(QUANT_OUTPUTDIR)/exprs_transcript.tsv $(MAGE_REFDIR)/t2g_mapping.tsv > $(QUANT_OUTPUTDIR)/exprs_gene.tsv
