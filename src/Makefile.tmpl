@@ -1,0 +1,33 @@
+SHELL := /bin/bash
+
+
+MAGEROOT={{.Rootdir}}
+MAGE_PROJDIR={{.Projdir}}
+META={{.Metafile}}
+KALLISTO={{.Kallisto}}
+KALLISTO_INDEX={{.Refindex}}
+GTF={{.Gtffile}}
+MAGE_REFDIR=$(MAGE_REFDIR)/ref
+QUANT_OUTPUTDIR=$(MAGE_PROJDIR)/quant
+
+help: ## Prints help for targets with comments
+	@grep -E '^[.0-9a-zA-Z_-/]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+
+quant: $(MAGE_REFDIR)/t2g_mapping.tsv ## Quantification process
+	$(MAGEROOT)/bin/mage-quant -kal=$(KALLISTO) -fastqdir=$(MAGE_PROJDIR)/fastqs -index=$(KALLISTO_INDEX) -meta=$(META) -outputdir=$(QUANT_OUTPUTDIR)/raw
+
+$(QUANT_OUTPUTDIR)/exprs_transcript.tsv: 
+	Rscript $(MAGEROOT)/src/utils/merge_abundances.R $(QUANT_OUTPUTDIR)/raw > $(QUANT_OUTPUTDIR)/exprs_transcript.tsv
+
+$(MAGE_REFDIR)/t2g_mapping.tsv: $(GTF) ## Transcript to Gene Mapping file
+        Rscript $(MAGEROOT)/src/utils/gtf_to_mapping.R $(GTF) > $(MAGE_REFDIR)/t2g_mapping.tsv
+
+$(QUANT_OUTPUTDIR)/exprs_gene.tsv: $(QUANT_OUTPUTDIR)/exprs_transcript.tsv  $(MAGE_REFDIR)/t2g_mapping.tsv
+	Rscript $(MAGEROOT)/src/quant/convert_t2g.R $(QUANT_OUTPUTDIR)/exprs_transcript.tsv $(MAGE_REFDIR)/t2g_mapping.tsv > $(QUANT_OUTPUTDIR)/exprs_gene.tsv
+
+$(MAGE_PROJDIR)/stat.json:  $(QUANT_OUTPUTDIR)/exprs_gene.tsv
+	Rscript $(MAGEROOT)/src/utils/stat_expression_matrix.R $(QUANT_OUTPUTDIR)/exprs_gene.tsv > $(MAGE_PROJDIR)/stat.json
+
+$(QUANT_OUTPUTDIR)/exprs_gene_clean_long.tsv: $(QUANT_OUTPUTDIR)/exprs_gene.tsv $(MAGE_PROJDIR)/stat.json
+	Rscript $(MAGEROOT)/src/utils/prepare_and_clean_exprs.R $(QUANT_OUTPUTDIR)/exprs_gene.tsv $(MAGE_PROJDIR)/stat.json > $(QUANT_OUTPUTDIR)/exprs_gene_clean_long.tsv
