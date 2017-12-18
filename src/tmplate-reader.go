@@ -34,6 +34,9 @@ func main() {
 	err = yaml.Unmarshal(configData, &t)
 	check(err)
 
+	t.Rootdir, _ = expand(t.Rootdir)
+	t.Kallisto, _ = expand(t.Kallisto)
+
 	if os.Getenv("MAGEROOT") == "" {
 		log.Fatalf("Please set MAGEROOT environmental variable")
 	}
