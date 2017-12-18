@@ -7,8 +7,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"os/user"
-	"path/filepath"
 )
 
 func worker(id string, cmd string, jobs <-chan int, results chan<- int) {
@@ -41,7 +39,7 @@ func checkFile(path string) {
 func checkDirCreate(path string) {
 	// Create a directory if doesn't exist
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		err2 := os.Mkdir(path, 0750)
+		err2 := os.MkdirAll(path, 0750)
 		if err2 != nil {
 			log.Fatal(err2)
 		}

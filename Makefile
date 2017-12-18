@@ -6,5 +6,7 @@ help: ## Prints help for targets with comments
 
 all:
 	go build -o bin/template-reader src/tmplate-reader.go src/functions.go
+
+bin/mage-quant: ## bin/mage-quant
 	go build -o bin/mage-quant src/mage-quant.go src/functions.go
 
