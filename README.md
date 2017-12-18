@@ -97,6 +97,7 @@ tar xzvf kallisto_linux-v0.43.1.tar.gz
 
 ```
 go get github.com/urfave/cli
+go get gopkg.in/yaml.v2
 ```
 
 # Implementation notes
