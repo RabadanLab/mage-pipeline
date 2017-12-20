@@ -63,10 +63,10 @@ data_sim <- meta %>%
 
 # Generate wide matrix
 data_sim_w <- data_sim %>%
-  mutate(gene_label = paste0("r", exprs, "_fc", fc, "_d", dispers)) %>%
+  mutate(target_id = paste0("r", exprs, "_fc", fc, "_d", dispers)) %>%
   mutate(id = paste0(sample, "_", rep)) %>%
-  select(gene_label, id, data) %>%
+  select(target_id, id, data) %>%
   spread(id, data)
-
+  
 # Save wide expression data
 write_tsv(data_sim_w, "tests/toydata_exprs_w.tsv") 
