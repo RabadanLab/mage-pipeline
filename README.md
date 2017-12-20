@@ -11,6 +11,19 @@
 * R
     * packages: tidyverse, jsonlite
 
+* Need to have a `config.yaml` in your project directory:
+
+```
+rootdir: $HOME/mage-pipeline
+projdir: /home/ubuntu/mage-user
+metafile: meta.txt
+gtffile: /home/ubuntu/mage-user/ref/Macaca_mulatta.Mmul_8.0.1.90.gtf
+reffasta: /home/ubuntu/mage-user/ref/Macaca_mulatta.Mmul_8.0.1.cdna.all.fa
+refindex: /home/ubuntu/mage-user/ref/Macaca_mulatta.Mmul_8.0.1.cdna.all.kallisto_v0.43.0.idx
+kallisto: ~/bin/kallisto_linux-v0.43.0/kallisto
+```
+
+
 # Setup
 
 ```
