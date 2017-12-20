@@ -12,8 +12,11 @@ df_exprs <- read_tsv(EXPRESSION_MATRIX_PATH,  col_types=cols(
 
 # TODO Add filtering step based on STAT_EXPRESSION_MATRIX
 
+# Create 'exprs_gene_clean_long.tsv'
 df_exprs %>%
   gather(id, est_counts, 2:ncol(.)) %>% 
   arrange(target_id, id) %>%
   format_tsv() %>%
   cat()
+  
+# Create 'exprs_gene_clean_wide.tsv'
