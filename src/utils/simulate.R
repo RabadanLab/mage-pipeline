@@ -41,15 +41,16 @@ simulate <- function(n, exprs, fc, dispers) {
 
 
 
-# Parameters
+# Parameters ----
 exprs <-
   seq(10, 1000, by = 5)
 #c(low = 11, mid = 100, high = 1000) # expression level in counts
 #dispers <- c(0.5, 1, 2) # dispersion
-dispers <- seq(0.5, 3, by=0.1) # dispersion
-fc <- c(1, 2, 5)  # fold change
+dispers <- seq(0.5, 3, by = 0.1) # dispersion
+fc <- c(1, 2, 0.5)  # fold change
+ratio_fc <- c(0.8, 0.2)
 
-# Construct multiple scenarios
+# Construct multiple scenarios ----
 meta <- as_tibble(expand.grid(
   exprs = exprs,
   fc = fc,
@@ -57,10 +58,28 @@ meta <- as_tibble(expand.grid(
 ))
 
 
+
+adjust_meta  <- function(meta, PERC = 0.1, seed=628) {
+  split_df <-  base::split(meta, meta$fc)
+  name_split_df <- names(split_df)
+  to_sample <- setdiff( name_split_df, "1")
+  set.seed(seed)
+  res <- list()
+  for(sample_name in to_sample) {
+    sampled_df <-  dplyr::sample_n(split_df[[sample_name]], base::NROW(split_df[["1"]]) * PERC/length(to_sample))
+    res[[sample_name]] <-  sampled_df
+  }
+  
+  dplyr::bind_rows(split_df[["1"]], res)
+  
+}
+
 # Simulate the RNA-seq data
-simulate_with_n <- function(N_REP) {
-  data_sim <- meta %>%
-    mutate(sample = pmap(list(n = N_REP, exprs, fc, dispers), simulate)) %>%
+simulate_with_n <- function(N_REP, meta) {
+  data_sim_tmp <- meta %>%
+    mutate(sample = pmap(list(n = N_REP, exprs, fc, dispers), simulate))
+  
+  data_sim <- data_sim_tmp %>%
     mutate(sample = map(sample, as_tibble)) %>%
     unnest() %>%
     gather(sample, data, 5:6) %>%
@@ -102,8 +121,8 @@ simulate_with_n <- function(N_REP) {
   invisible(list(data_sim_w, meta, meta_sample))
 }
 
+meta <- adjust_meta(meta, PERC=0.1)
 set.seed(628)
 N_REP <- 100  # 3, 10, 50, 100
 data <- c(3, 10, 50, 100) %>%
-  map(simulate_with_n)
-
+  map(function(i) simulate_with_n(i, meta))
