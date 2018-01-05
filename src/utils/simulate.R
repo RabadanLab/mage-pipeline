@@ -11,12 +11,12 @@ rgampois_proposed <- function(n, mu, precision) {
 }
 
 
-#' Simulate the RNA_seq samples
+#' Simulate the RNA_seq samples for a gene in two conditions
 #'
 #' @param n Number of replicates to make
-#' @param exprs
-#' @param fc
-#' @param dispers
+#' @param exprs Mean Expressions
+#' @param fc Fold change
+#' @param dispers Dispersion
 #'
 #' @return
 #' @export
