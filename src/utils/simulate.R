@@ -43,30 +43,67 @@ simulate <- function(n, exprs, fc, dispers) {
 
 # Parameters
 exprs <-
-  c(low = 10, mid = 100, high = 1000) # expression level in counts
-dispers <- c(0.5, 1, 2) # dispersion
+  seq(10, 1000, by = 5)
+#c(low = 11, mid = 100, high = 1000) # expression level in counts
+#dispers <- c(0.5, 1, 2) # dispersion
+dispers <- seq(0.5, 3, by=0.1) # dispersion
 fc <- c(1, 2, 5)  # fold change
 
 # Construct multiple scenarios
-meta <- as_tibble(expand.grid(exprs = exprs,
-                    fc = fc,
-                    dispers = dispers))
+meta <- as_tibble(expand.grid(
+  exprs = exprs,
+  fc = fc,
+  dispers = dispers
+))
 
 
 # Simulate the RNA-seq data
-set.seed(628)
-data_sim <- meta %>%
-  mutate(sample = pmap(list(n = 3, exprs, fc, dispers), simulate)) %>%
-  mutate(sample = map(sample, as_tibble)) %>%
-  unnest() %>%
-  gather(sample, data, 5:6)
-
-# Generate wide matrix
-data_sim_w <- data_sim %>%
-  mutate(target_id = paste0("r", exprs, "_fc", fc, "_d", dispers)) %>%
-  mutate(id = paste0(sample, "_", rep)) %>%
-  select(target_id, id, data) %>%
-  spread(id, data)
+simulate_with_n <- function(N_REP) {
+  data_sim <- meta %>%
+    mutate(sample = pmap(list(n = N_REP, exprs, fc, dispers), simulate)) %>%
+    mutate(sample = map(sample, as_tibble)) %>%
+    unnest() %>%
+    gather(sample, data, 5:6) %>%
+    mutate(target_id = paste0("r", exprs, "_fc", fc, "_d", dispers)) %>%
+    mutate(id = paste0(sample, "_", rep))
   
-# Save wide expression data
-write_tsv(data_sim_w, "tests/toydata_exprs_w.tsv") 
+  DEPTH <- FALSE
+  if (DEPTH) {
+    sim_meta <- data_sim %>%
+      distinct(id) %>%
+      mutate(size_factor = rnorm(
+        n = NROW(.),
+        mean = 1,
+        sd = 0.1
+      )) %>%
+      mutate(depth = 1e7 * size_factor)
+    
+    data_sim <- data_sim %>%
+      mutate(data = data / 1e7) %>%
+      left_join(sim_meta, by = "id") %>%
+      mutate(data = as.integer(data * depth))
+  }
+  
+  # Generate wide matrix
+  data_sim_w <- data_sim %>%
+    select(target_id, id, data) %>%
+    spread(id, data)
+  
+  cname <- colnames(data_sim_w)[-1]
+  meta_sample <- tibble(cname) %>%
+    separate(cname, c("sid", "repid"), sep = "_")
+  # Save wide expression data ----
+  write_tsv(data_sim_w,
+            paste0("tests/toydata_exprs_w_N", N_REP, ".tsv"))
+  write_tsv(meta, paste0("tests/toydata_meta_N", N_REP, ".tsv"))
+  write_tsv(meta_sample,
+            paste0("tests/toydata_meta_sample_N", N_REP, ".tsv"))
+  
+  invisible(list(data_sim_w, meta, meta_sample))
+}
+
+set.seed(628)
+N_REP <- 100  # 3, 10, 50, 100
+data <- c(3, 10, 50, 100) %>%
+  map(simulate_with_n)
+
