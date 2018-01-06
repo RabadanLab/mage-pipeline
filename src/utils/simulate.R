@@ -46,27 +46,21 @@ exprs <-
   seq(10, 1000, by = 5)
 #c(low = 11, mid = 100, high = 1000) # expression level in counts
 #dispers <- c(0.5, 1, 2) # dispersion
-dispers <- seq(0.5, 3, by = 0.1) # dispersion
+dispers <- seq(0.5, 2, by = 0.1) # dispersion
 fc <- c(1, 2, 0.5)  # fold change
 ratio_fc <- c(0.8, 0.2)
 
-# Construct multiple scenarios ----
-meta <- as_tibble(expand.grid(
-  exprs = exprs,
-  fc = fc,
-  dispers = dispers
-))
 
 
-
-adjust_meta  <- function(meta, PERC = 0.1, seed=628) {
+adjust_meta  <- function(meta, PERC = 0.1) {
   split_df <-  base::split(meta, meta$fc)
   name_split_df <- names(split_df)
-  to_sample <- setdiff( name_split_df, "1")
-  set.seed(seed)
+  to_sample <- setdiff(name_split_df, "1")
   res <- list()
-  for(sample_name in to_sample) {
-    sampled_df <-  dplyr::sample_n(split_df[[sample_name]], base::NROW(split_df[["1"]]) * PERC/length(to_sample))
+  for (sample_name in to_sample) {
+    sampled_df <-
+      dplyr::sample_n(split_df[[sample_name]], base::NROW(split_df[["1"]]) * PERC /
+                        length(to_sample))
     res[[sample_name]] <-  sampled_df
   }
   
@@ -75,7 +69,7 @@ adjust_meta  <- function(meta, PERC = 0.1, seed=628) {
 }
 
 # Simulate the RNA-seq data
-simulate_with_n <- function(N_REP, meta) {
+simulate_with_n <- function(N_REP, meta, PREFIX) {
   data_sim_tmp <- meta %>%
     mutate(sample = pmap(list(n = N_REP, exprs, fc, dispers), simulate))
   
@@ -109,20 +103,51 @@ simulate_with_n <- function(N_REP, meta) {
     spread(id, data)
   
   cname <- colnames(data_sim_w)[-1]
-  meta_sample <- tibble(cname) %>%
-    separate(cname, c("sid", "repid"), sep = "_")
+  
   # Save wide expression data ----
   write_tsv(data_sim_w,
-            paste0("tests/toydata_exprs_w_N", N_REP, ".tsv"))
-  write_tsv(meta, paste0("tests/toydata_meta_N", N_REP, ".tsv"))
-  write_tsv(meta_sample,
-            paste0("tests/toydata_meta_sample_N", N_REP, ".tsv"))
+            paste0(PREFIX, N_REP, ".tsv"))
   
   invisible(list(data_sim_w, meta, meta_sample))
 }
 
-meta <- adjust_meta(meta, PERC=0.1)
-set.seed(628)
-N_REP <- 100  # 3, 10, 50, 100
-data <- c(3, 10, 50, 100) %>%
-  map(function(i) simulate_with_n(i, meta))
+simulate_all <- function(meta, SET, PERC, NREP) {
+  #SET <- 1
+  #PERC <- 0.1
+  meta_adj <- adjust_meta(meta, PERC = PERC)
+  set.seed(as.integer(20 * SET))
+  data <-
+    simulate_with_n(
+      NREP,
+      meta_adj,
+      PREFIX = paste0(
+        "tests/benchmark_data/S",
+        SET,
+        "_P",
+        PERC,
+        "_N"
+      )
+    )
+  
+}
+
+# Construct multiple scenarios ----
+meta <- as_tibble(expand.grid(
+  exprs = exprs,
+  fc = fc,
+  dispers = dispers
+))
+
+SETS <- seq(1, 3)
+PERCS <- c(0.01, 0.1, 0.5)
+NREPS <- c(3, 10, 50)
+expand.grid(sets = SETS,
+            percs = PERCS,
+            nreps = NREPS) %>%
+  as_tibble %>%
+  mutate(x = pmap(list(sets, percs, nreps), function(s, p, n) {
+    simulate_all(meta,
+                 SET = s,
+                 PERC = p,
+                 NREP = n)
+  }))
