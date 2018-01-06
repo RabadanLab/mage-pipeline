@@ -9,6 +9,10 @@ STANDIR=tests/stanfc_N$(NREP)
 DF_LONG_SPLIT=$(SPLITDIR)/toydata_exprs_w_N$(NREP)_l-$(SPLIT).tsv
 STANOUTPUT=$(STANDIR)/toydata_exprs_w_N$(NREP)_l-$(SPLIT).stan.txt
 
+init:
+	mkdir -p $(SPLITDIR)
+	mkdir -p $(STANDIR)
+
 $(DF_LONG):
 	Rscript src/model/wide_to_long.R $(DF_WIDE) 2>/dev/null > $(DF_LONG)
 
