@@ -48,7 +48,7 @@ outputfile <- args[3]
 long_gene_exprs_df <- read_tsv(long_gene_exprs_df_path)
 stanD <- prepare_stan_data(long_gene_exprs_df)
 start <- Sys.time()
-fit <- stan(file = stanmodel, data = stanD, control = list(adapt_delta = 0.99))
+fit <- stan(file = stanmodel, data = stanD)
 end <- Sys.time()
 end - start
 write_tsv(compute_fc(fit), path=outputfile)
