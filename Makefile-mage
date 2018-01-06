@@ -1,0 +1,37 @@
+NREP=10
+SPLIT=1
+DF_WIDE=tests/input_exprs/toydata_exprs_w_N$(NREP).tsv
+DF_LONG=tests/input_exprs/toydata_exprs_w_N$(NREP)_l.tsv
+
+SPLITDIR=tests/splits_N$(NREP)
+STANDIR=tests/stanfc_N$(NREP)
+
+DF_LONG_SPLIT=$(SPLITDIR)/toydata_exprs_w_N$(NREP)_l-$(SPLIT).tsv
+STANOUTPUT=$(STANDIR)/toydata_exprs_w_N$(NREP)_l-$(SPLIT).stan.txt
+
+init:
+	mkdir -p $(SPLITDIR)
+	mkdir -p $(STANDIR)
+
+$(DF_LONG):
+	Rscript src/model/wide_to_long.R $(DF_WIDE) 2>/dev/null > $(DF_LONG)
+
+$(DF_LONG_SPLIT): $(DF_LONG)
+	Rscript src/model/wide_to_long_gene_splitter.R $(DF_LONG) $(SPLIT) > $(DF_LONG_SPLIT)
+
+mage $(STANOUTPUT): $(DF_LONG_SPLIT)
+	Rscript src/model/run_model.R src/model/model_onefactor.stan $(DF_LONG_SPLIT) $(STANOUTPUT)
+
+
+once: init 
+	make -f Makefile-mage NREP=$(NREP) SPLIT=$(SPLIT)
+all: $(STANDIR)/toydata_exprs_w_N$(NREP)_l-$(SPLIT).stan.txt
+	@seq 2 $(shell cat $(DF_WIDE) | sed '1d' | wc -l) | parallel -j$(shell nproc) 'make -f Makefile-mage SPLIT={} NREP=$(NREP) mage'
+
+merge:
+	grep -H . tests/stanfc_N$(NREP)/* | awk 'NR % 2 == 0' | tr ':' '\t' | perl -pe 's/toydata_exprs_w_N$(NREP)_l-//; s/\.stan\.txt//; s/tests\/stanfc_N$(NREP)\///' | sort -k1,1n > tests/merged_N$(NREP).polished.txt
+
+monitor:
+	@watch 'ls $(STANDIR) | wc -l'
+
+.PHONY: init
