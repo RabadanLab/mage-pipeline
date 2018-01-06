@@ -35,7 +35,10 @@ all: $(STANDIR)/$(DATANAME)_l-$(SPLIT).stan.txt
 	@seq 2 $(shell cat $(DF_WIDE) | sed '1d' | wc -l) | parallel -j$(shell nproc) 'make -f Makefile-mage SPLIT={} NREP=$(NREP) mage'
 
 merge: all 
-	grep -H . tests/stanfc_N$(NREP)/* | awk 'NR % 2 == 0' | tr ':' '\t' | perl -pe 's/$(DATANAME)_l-//; s/\.stan\.txt//; s/tests\/stanfc_$(DATANAME)\///' | sort -k1,1n > tests/merged_$(DATANAME).polished.txt
+	grep -H . $(STANDIR)/* | awk 'NR % 2 == 0' | tr ':' '\t' | perl -pe 's/$(DATANAME)_l-//; s/\.stan\.txt//; s/tests\/stanfc_$(DATANAME)\///' | sort -k1,1n > tests/merged_$(DATANAME).polished.txt
+
+merge_indep:
+	grep -H . $(STANDIR)/* | awk 'NR % 2 == 0' | tr ':' '\t' | perl -pe 's/$(DATANAME)_l-//; s/\.stan\.txt//; s/tests\/stanfc_$(DATANAME)\///' | sort -k1,1n > tests/merged_$(DATANAME).polished.txt
 
 monitor:
 	@watch 'ls $(STANDIR) | wc -l'
