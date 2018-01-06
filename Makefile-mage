@@ -22,4 +22,4 @@ all:
 	@echo "seq 1 $(shell cat $(DF_WIDE) | sed '1d' | wc -l) | parallel -j$(shell nproc) --dry-run 'make -f Makefile-mage SPLIT={} mage'"
 
 merge:
-	cat tests/merged.txt | awk 'NR % 2 == 0' | tr ':' '\t' | perl -pe 's/toydata_exprs_w_N$(NREP)_l-//; s/\.stan\.txt//' | sort -k1,1n > tests/merged.polished.txt
+	grep -H . tests/stanfc_N$(NREP)/* | awk 'NR % 2 == 0' | tr ':' '\t' | perl -pe 's/toydata_exprs_w_N$(NREP)_l-//; s/\.stan\.txt//; s/tests\/stanfc_N$(NREP)\///' | sort -k1,1n > tests/merged_N$(NREP).polished.txt
