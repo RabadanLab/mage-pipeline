@@ -31,4 +31,7 @@ all: $(STANDIR)/toydata_exprs_w_N$(NREP)_l-$(SPLIT).stan.txt
 merge:
 	grep -H . tests/stanfc_N$(NREP)/* | awk 'NR % 2 == 0' | tr ':' '\t' | perl -pe 's/toydata_exprs_w_N$(NREP)_l-//; s/\.stan\.txt//; s/tests\/stanfc_N$(NREP)\///' | sort -k1,1n > tests/merged_N$(NREP).polished.txt
 
+monitor:
+	@watch 'ls $(STANDIR) | wc -l'
+
 .PHONY: init
