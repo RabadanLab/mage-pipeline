@@ -30,7 +30,7 @@ mage $(STANOUTPUT): $(DF_LONG_SPLIT)
 
 
 once $(STANDIR)/$(DATANAME)_l-$(SPLIT).stan.txt: init 
-	make -f Makefile-mage NREP=$(NREP) SPLIT=$(SPLIT)
+	make -f Makefile-mage NREP=$(NREP) SPLIT=$(SPLIT) mage
 all: $(STANDIR)/$(DATANAME)_l-$(SPLIT).stan.txt
 	@seq 2 $(shell cat $(DF_WIDE) | sed '1d' | wc -l) | parallel -j$(shell nproc) 'make -f Makefile-mage SPLIT={} NREP=$(NREP) mage'
 
