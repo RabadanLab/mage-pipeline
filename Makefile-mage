@@ -1,0 +1,23 @@
+NREP=3
+SPLIT=1
+DF_WIDE=tests/input_exprs/toydata_exprs_w_N$(NREP).tsv
+DF_LONG=tests/input_exprs/toydata_exprs_w_N$(NREP)_l.tsv
+DF_LONG_SPLIT=tests/splits/toydata_exprs_w_N$(NREP)_l-$(SPLIT).tsv
+STANOUTPUT=tests/stanfc/toydata_exprs_w_N$(NREP)_l-$(SPLIT).stan.txt
+
+$(DF_LONG):
+	mkdir -p tests/splits
+	mkdir -p tests/stanfc
+	Rscript src/model/wide_to_long.R $(DF_WIDE) 2>/dev/null > $(DF_LONG)
+
+$(DF_LONG_SPLIT): $(DF_LONG)
+	Rscript src/model/wide_to_long_gene_splitter.R $(DF_LONG) $(SPLIT) > $(DF_LONG_SPLIT)
+
+mage $(STANOUTPUT): $(DF_LONG_SPLIT)
+	Rscript src/model/run_model.R src/model/model_onefactor.stan $(DF_LONG_SPLIT) $(STANOUTPUT)
+
+all:
+	@echo "seq 1 $(shell cat $(DF_WIDE) | sed '1d' | wc -l) | parallel -j4 --dry-run 'make -f Makefile-mage SPLIT={} mage'"
+
+merge:
+	cat tests/merged.txt | awk 'NR % 2 == 0' | tr ':' '\t' | perl -pe 's/toydata_exprs_w_N$(NREP)_l-//; s/\.stan\.txt//' | sort -k1,1n > tests/merged.polished.txt
