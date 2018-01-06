@@ -1,13 +1,19 @@
-NREP=10
 SPLIT=1
-DF_WIDE=tests/input_exprs/toydata_exprs_w_N$(NREP).tsv
-DF_LONG=tests/input_exprs/toydata_exprs_w_N$(NREP)_l.tsv
+NREP=3
+SET=1
+PERC=0.01
+#S1_P0.01_N10.tsv
 
-SPLITDIR=tests/splits_N$(NREP)
-STANDIR=tests/stanfc_N$(NREP)
+DATANAME=S$(SET)_P$(PERC)_N$(NREP)
 
-DF_LONG_SPLIT=$(SPLITDIR)/toydata_exprs_w_N$(NREP)_l-$(SPLIT).tsv
-STANOUTPUT=$(STANDIR)/toydata_exprs_w_N$(NREP)_l-$(SPLIT).stan.txt
+DF_WIDE=tests/benchmark_data/$(DATANAME).tsv
+DF_LONG=tests/benchmark_data/$(DATANAME)_l.tsv
+
+SPLITDIR=tests/splits_$(DATANAME)
+STANDIR=tests/stanfc_$(DATANAME)
+
+DF_LONG_SPLIT=$(SPLITDIR)/$(DATANAME)_l-$(SPLIT).tsv
+STANOUTPUT=$(STANDIR)/$(DATANAME)_l-$(SPLIT).stan.txt
 
 init:
 	mkdir -p $(SPLITDIR)
@@ -23,13 +29,13 @@ mage $(STANOUTPUT): $(DF_LONG_SPLIT)
 	Rscript src/model/run_model.R src/model/model_onefactor.stan $(DF_LONG_SPLIT) $(STANOUTPUT)
 
 
-once: init 
+once $(STANDIR)/$(DATANAME)_l-$(SPLIT).stan.txt: init 
 	make -f Makefile-mage NREP=$(NREP) SPLIT=$(SPLIT)
-all: $(STANDIR)/toydata_exprs_w_N$(NREP)_l-$(SPLIT).stan.txt
+all: $(STANDIR)/$(DATANAME)_l-$(SPLIT).stan.txt
 	@seq 2 $(shell cat $(DF_WIDE) | sed '1d' | wc -l) | parallel -j$(shell nproc) 'make -f Makefile-mage SPLIT={} NREP=$(NREP) mage'
 
-merge:
-	grep -H . tests/stanfc_N$(NREP)/* | awk 'NR % 2 == 0' | tr ':' '\t' | perl -pe 's/toydata_exprs_w_N$(NREP)_l-//; s/\.stan\.txt//; s/tests\/stanfc_N$(NREP)\///' | sort -k1,1n > tests/merged_N$(NREP).polished.txt
+merge: all 
+	grep -H . tests/stanfc_N$(NREP)/* | awk 'NR % 2 == 0' | tr ':' '\t' | perl -pe 's/$(DATANAME)_l-//; s/\.stan\.txt//; s/tests\/stanfc_$(DATANAME)\///' | sort -k1,1n > tests/merged_$(DATANAME).polished.txt
 
 monitor:
 	@watch 'ls $(STANDIR) | wc -l'
